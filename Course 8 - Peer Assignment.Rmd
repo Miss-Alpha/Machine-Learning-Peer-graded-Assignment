@@ -1,0 +1,90 @@
+---
+title: "Prediction Assignment Writeup"
+author: "Atoosa Madadkar"
+date: "11/26/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(skimr)
+library(tidyr)
+library(dplyr)
+library(caret)
+library(GGally)
+library(randomForest)
+```
+
+## Introduction
+
+Human Activity Recognition - HAR - has emerged as a key research area in the last years and is gaining increasing attention by the pervasive computing research community, especially for the development of context-aware systems.
+
+This human activity recognition research has traditionally focused on discriminating between different activities, i.e. to predict "which" activity was performed at a specific point in time. 
+
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions which are explained in the table below.
+
+Class Category  | Descriptions
+------------- | -------------
+__Class A__ |	exactly according to the specification
+__Class B__	| throwing the elbows to the front
+__Class C__ |	lifting the dumbbell only halfway
+__Class D__ | lowering the dumbbell only halfway
+__Class E__	| and throwing the hips to the front
+
+Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. Participants were supervised by an experienced weight lifter to make sure the execution complied to the manner they were supposed to simulate. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience. 
+The puporse of this data processing is to introduce a classification algorithm which can accurately predict the exercise type.
+
+## Data Processing and Data Cleaning
+
+```{r Download the file, echo=FALSE, cache=TRUE}
+train_URL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+download.file(train_URL, destfile = 
+                paste0(getwd(), '/pml_training.csv'), method = "curl")
+pml <- read.csv('pml_training.csv', header = TRUE, sep = ",", quote = "\"")
+```
+The data consists of 160 variables, with "classe" as the exercise type and 19622 observations from six participants. 71 variables consisted of 98% of missing data, the index and time related feature were removed. Furthermore, 59 features which had near zero variablity, were put aside. 
+With the 55 remained variables, the variables with the suffixes _x, _y, _z were excluded and the ones with total measurements remained the final model. 
+
+```{r Data Processing}
+#Find columns with missing values and remove them 
+col_names <- names(pml[,!sapply(pml, function(x) sum(is.na(x)) > 0)])
+keep_cols <- names(pml) %in% col_names;
+pml <- pml[,keep_cols] #67 variables are thrown out
+
+#Exclude time and index variables 
+pml <- pml %>% select(-c("X", "num_window", "cvtd_timestamp", "raw_timestamp_part_1", "raw_timestamp_part_2" ))
+
+#Find near zero values and remove them
+nzv <- nearZeroVar(pml, saveMetrics = TRUE)
+pml <- pml[,nzv$nzv == FALSE] #59 variables are gone
+
+finalCols <- !grepl("_x|_y|_z", names(pml))
+pml <- pml[finalCols]
+```
+
+Ultimately, 17 variables were considered for further analysis. They were partitioned into training and testing datasets. Their characteristic of the training dataset is shown in the following table.
+
+```{r Data Partioning}
+set.seed(2223)
+inTrain <- createDataPartition(pml$classe, p=.7, list=FALSE)
+training <- pml[inTrain,]
+testing <- pml[-inTrain,]
+
+skim(training)[,1:11]
+```
+
+
+## Machine Learning Algorithm
+The finalized training dataset was used in various machine learning algorithms including Decision Trees, Boosting, and K-nearest neighbor. None of them had a better performance than Random Forest in terms of accuracy, sensitivity and specificity. The fitted model was implemented in the test outcomes, and the result was impressive.
+
+```{r Random Forest Algorithm}
+set.seed(5742)
+rfFit <- randomForest(as.factor(classe) ~ ., data=training)
+rf_prediction <- predict(rfFit, newdata=testing)
+confusionMatrix(rf_prediction, as.factor(testing$classe))
+```
+There were 500 trees built in the model and the model tried 4 different variables at each split.
+Based on the Mean Decrease Gini of our 17 variables, __roll_belt__, __yaw_belt__, and __pitch_belt__ are the most important variables in the model since they contribute the most to the homogeneity of the nodes and leaves.
+
+## Reference
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
