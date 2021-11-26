@@ -32,7 +32,7 @@ The puporse of this data processing is to introduce a classification algorithm w
 
 
 The data consists of 160 variables, with "classe" as the exercise type and 19622 observations from six participants. 71 variables consisted of 98% of missing data, the index and time related feature were removed. Furthermore, 59 features which had near zero variablity, were put aside. 
-With the 55 remained variables, the variables with the suffixes _x, _y, _z were excluded and the ones with total measurements remained the final model. 
+With the 55 remained variables, the variables with the suffixes _x, _y, _z were excluded and the ones with total measurements remained the final model. Ultimately, 17 variables were considered for further analysis.
 
 
 ```r
@@ -52,7 +52,8 @@ finalCols <- !grepl("_x|_y|_z", names(pml))
 pml <- pml[finalCols]
 ```
 
-Ultimately, 17 variables were considered for further analysis. They were partitioned into training and testing datasets. Their characteristic of the training dataset is shown in the following table.
+## Cross-Validation
+ The properly cleaned data was partitioned into training and testing datasets. The training dataset was set to include 70% of the whole data. The testing dataset will be used in the following section, after the finalized model is introduced. The characteristic of the training dataset is shown in the following table.
 
 
 ```r
@@ -109,9 +110,35 @@ Table: Data summary
 |yaw_forearm          |         0|             1|  19.69| 103.17|
 |total_accel_forearm  |         0|             1|  34.82|  10.06|
 
+## Exploratory Data Analysis
+Various relationships were explored, out of which the __roll_belt__, __pitch_bell__, and __yaw_belt__ showed the most variability with exercise type and the individual. The graph below shows this kind of variability in __pitch_belt__ and __yaw_belt__ in classe and individual's categories. 
+
+```r
+ggplot(training, aes(pitch_belt, yaw_belt, color = user_name)) +
+  geom_point(alpha=.1) + geom_jitter(width=10, height=10) + 
+  facet_grid(~ classe) 
+```
+
+![](Course-8---Peer-Assignment_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
+
+
+```r
+pairsvar <- select(training, c("classe", "roll_belt", 
+                               "pitch_belt", "yaw_belt", "total_accel_forearm"))
+ggpairs(pairsvar, aes(colour=classe))
+```
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](Course-8---Peer-Assignment_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
 
 ## Machine Learning Algorithm
-The finalized training dataset was used in various machine learning algorithms including Decision Trees, Boosting, and K-nearest neighbor. None of them had a better performance than Random Forest in terms of accuracy, sensitivity and specificity. The fitted model was implemented in the test outcomes, and the result was impressive.
+The finalized training dataset was used in various machine learning algorithms including Decision Trees, Boosting, and K-nearest neighbor. None of them had a better performance than Random Forest in terms of accuracy, sensitivity and specificity. For the cross validation, the fitted model was implemented in the test outcomes, and the result was impressive.
 
 
 ```r
@@ -156,7 +183,7 @@ confusionMatrix(rf_prediction, as.factor(testing$classe))
 ## Balanced Accuracy      0.9978   0.9866   0.9925   0.9942   0.9953
 ```
 There were 500 trees built in the model and the model tried 4 different variables at each split.
-Based on the Mean Decrease Gini of our 17 variables, __roll_belt__, __yaw_belt__, and __pitch_belt__ are the most important variables in the model since they contribute the most to the homogeneity of the nodes and leaves. The average of out of bag error is 0.012 in this model.
+Based on the Mean Decrease Gini of our 17 variables, __roll_belt__, __yaw_belt__, and __pitch_belt__ are the most important variables in the model since they contribute the most to the homogeneity of the nodes and leaves. The average out of bound (OOB) error rate is 0.012 in this model, calculated by mean(rfFit$err.rate[,1]).
 
 ## Reference
 Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
