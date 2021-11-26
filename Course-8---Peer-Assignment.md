@@ -156,7 +156,7 @@ confusionMatrix(rf_prediction, as.factor(testing$classe))
 ## Balanced Accuracy      0.9978   0.9866   0.9925   0.9942   0.9953
 ```
 There were 500 trees built in the model and the model tried 4 different variables at each split.
-Based on the Mean Decrease Gini of our 17 variables, __roll_belt__, __yaw_belt__, and __pitch_belt__ are the most important variables in the model since they contribute the most to the homogeneity of the nodes and leaves.
+Based on the Mean Decrease Gini of our 17 variables, __roll_belt__, __yaw_belt__, and __pitch_belt__ are the most important variables in the model since they contribute the most to the homogeneity of the nodes and leaves. The average of out of bag error is 0.012 in this model.
 
 ## Reference
 Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
